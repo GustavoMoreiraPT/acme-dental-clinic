@@ -9,8 +9,8 @@ RUN pip install --no-cache-dir uv
 # Copy dependency manifests first (Docker layer caching)
 COPY pyproject.toml uv.lock ./
 
-# Install production deps only (no dev extras)
-RUN uv sync --frozen --no-dev
+# Install production deps only (skip building the project package itself)
+RUN uv sync --frozen --no-dev --no-install-project
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────
 FROM python:3.11-slim AS runtime
