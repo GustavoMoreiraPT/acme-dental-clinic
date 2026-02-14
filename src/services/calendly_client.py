@@ -8,6 +8,7 @@ All requests require a Personal Access Token passed as a Bearer token.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from typing import Any
 
@@ -395,13 +396,20 @@ class CalendlyClient:
         return results
 
 
-# ── Module-level singleton ──────────────────────────────────────────
+# ── Module-level singleton (thread-safe) ────────────────────────────
 _client: CalendlyClient | None = None
+_client_lock = threading.Lock()
 
 
 def get_calendly_client() -> CalendlyClient:
-    """Return a module-level CalendlyClient singleton."""
+    """Return a module-level CalendlyClient singleton.
+
+    Uses double-checked locking so that the lock is only acquired during
+    the first initialisation, not on every subsequent call.
+    """
     global _client
     if _client is None:
-        _client = CalendlyClient()
+        with _client_lock:
+            if _client is None:
+                _client = CalendlyClient()
     return _client
