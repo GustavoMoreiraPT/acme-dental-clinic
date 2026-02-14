@@ -12,7 +12,7 @@ env:
   AWS_REGION: us-east-1
   ECR_REPO: acme-dental-backend
   ECS_CLUSTER: acme-dental
-  ECS_SERVICE: AcmeDental-App-FargateServiceService
+  ECS_SERVICE: AcmeDental-App-FargateServiceECC8084D-R6SLCQrYDe3t
 
 jobs:
   test:
