@@ -70,7 +70,11 @@ ALL_TOOLS = [
 
 
 def _build_llm() -> ChatAnthropic:
-    """Construct the Claude LLM with tool bindings."""
+    """Construct the Claude LLM with tool bindings.
+
+    Called once at graph-compilation time and captured in the closure of
+    ``chatbot_node`` so we don't reconstruct the client on every invocation.
+    """
     llm = ChatAnthropic(
         model=MODEL_NAME,
         api_key=ANTHROPIC_API_KEY,
@@ -80,12 +84,22 @@ def _build_llm() -> ChatAnthropic:
     return llm.bind_tools(ALL_TOOLS)
 
 
-def chatbot_node(state: AgentState) -> dict:
-    """Invoke the LLM with the current conversation history."""
+def _make_chatbot_node():
+    """Create the chatbot node with the LLM built once and reused.
+
+    The LLM + tool bindings are captured in the closure so that repeated
+    node invocations (chatbot → tool → chatbot → …) share one client
+    instead of re-constructing it on every loop iteration.
+    """
     llm_with_tools = _build_llm()
-    system = SystemMessage(content=get_system_prompt())
-    response = llm_with_tools.invoke([system] + state["messages"])
-    return {"messages": [response]}
+
+    def chatbot_node(state: AgentState) -> dict:
+        """Invoke the LLM with the current conversation history."""
+        system = SystemMessage(content=get_system_prompt())
+        response = llm_with_tools.invoke([system] + state["messages"])
+        return {"messages": [response]}
+
+    return chatbot_node
 
 
 # ── Conditional edge: route to tools or end ──────────────────────────
@@ -114,8 +128,8 @@ def create_acme_dental_agent() -> StateGraph:
     # Build the graph
     graph = StateGraph(AgentState)
 
-    # Add nodes
-    graph.add_node("chatbot", chatbot_node)
+    # Add nodes — the chatbot node captures a single LLM instance via closure
+    graph.add_node("chatbot", _make_chatbot_node())
     graph.add_node("tools", ToolNode(ALL_TOOLS))
 
     # Set entry point
