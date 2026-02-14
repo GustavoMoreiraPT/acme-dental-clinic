@@ -17,6 +17,7 @@ Architecture:
 from __future__ import annotations
 
 import logging
+import time
 from typing import Annotated
 
 from langchain_anthropic import ChatAnthropic
@@ -29,6 +30,7 @@ from typing_extensions import TypedDict
 
 from src.config import ANTHROPIC_API_KEY, MODEL_NAME
 from src.prompts import get_system_prompt
+from src.services.metrics import metrics
 from src.tools.calendly import (
     cancel_booking,
     create_booking,
@@ -96,8 +98,19 @@ def _make_chatbot_node():
     def chatbot_node(state: AgentState) -> dict:
         """Invoke the LLM with the current conversation history."""
         system = SystemMessage(content=get_system_prompt())
-        response = llm_with_tools.invoke([system] + state["messages"])
-        return {"messages": [response]}
+        t0 = time.perf_counter()
+        try:
+            response = llm_with_tools.invoke([system] + state["messages"])
+            elapsed = (time.perf_counter() - t0) * 1000
+            metrics.record_success("anthropic", "llm_invoke", latency_ms=elapsed)
+            return {"messages": [response]}
+        except Exception as exc:
+            elapsed = (time.perf_counter() - t0) * 1000
+            metrics.record_failure(
+                "anthropic", "llm_invoke",
+                error_type=type(exc).__name__, latency_ms=elapsed,
+            )
+            raise
 
     return chatbot_node
 

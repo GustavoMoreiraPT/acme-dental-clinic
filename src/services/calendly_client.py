@@ -16,6 +16,7 @@ import httpx
 
 from src.config import CALENDLY_API_TOKEN, CALENDLY_BASE_URL
 from src.services.cache import LRUCache
+from src.services.metrics import metrics
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +85,15 @@ class CalendlyClient:
         params: dict[str, Any] | None = None,
         json_body: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Execute an HTTP request with exponential-backoff retries."""
+        """Execute an HTTP request with exponential-backoff retries.
+
+        Emits CloudWatch metrics (via the ``metrics`` singleton) for every
+        completed request — both successes and failures.
+        """
+        operation = f"{method} {path}"
+        t0 = time.perf_counter()
         last_error: Exception | None = None
+
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 response = self._client.request(
@@ -100,10 +108,21 @@ class CalendlyClient:
                         status_code=response.status_code,
                     )
                 if response.status_code >= 400:
-                    raise CalendlyAPIError(
+                    error = CalendlyAPIError(
                         f"Client error {response.status_code}: {response.text}",
                         status_code=response.status_code,
                     )
+                    elapsed = (time.perf_counter() - t0) * 1000
+                    metrics.record_failure(
+                        "calendly", operation,
+                        error_type=f"{response.status_code // 100}xx",
+                        latency_ms=elapsed,
+                    )
+                    raise error
+
+                # Success
+                elapsed = (time.perf_counter() - t0) * 1000
+                metrics.record_success("calendly", operation, latency_ms=elapsed)
                 return response.json()
 
             except (httpx.TimeoutException, httpx.ConnectError) as exc:
@@ -128,6 +147,11 @@ class CalendlyClient:
 
             backoff = INITIAL_BACKOFF_SECONDS * (2 ** (attempt - 1))
             time.sleep(backoff)
+
+        # All retries exhausted
+        elapsed = (time.perf_counter() - t0) * 1000
+        error_type = type(last_error).__name__ if last_error else "unknown"
+        metrics.record_failure("calendly", operation, error_type=error_type, latency_ms=elapsed)
 
         raise CalendlyAPIError(
             f"Calendly API request failed after {MAX_RETRIES} retries: {last_error}"
