@@ -1,4 +1,4 @@
-.PHONY: install format lint check run test help
+.PHONY: install format lint check run serve test help
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -17,8 +17,11 @@ lint: ## Lint code with ruff
 
 check: format lint ## Format and lint code
 
-run: ## Run the agent
-	uv run python src/main.py
+run: ## Run the agent (CLI chat interface)
+	uv run python -m src.main
+
+serve: ## Start the FastAPI server (API + React frontend)
+	uv run uvicorn src.server:app --reload --host 0.0.0.0 --port 8000
 
 test: ## Run tests
 	uv run pytest
