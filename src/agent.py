@@ -55,16 +55,25 @@ logger = logging.getLogger(__name__)
 
 # ── Router classification prompt ─────────────────────────────────────
 
-ROUTER_PROMPT = """Classify this dental clinic conversation. Reply with exactly one word — either FAQ or BOOKING.
-
-- FAQ: greetings, questions about services, pricing, location, hours, policies, insurance, general info, thank-you messages, or anything that does NOT require looking up or modifying appointments.
-- BOOKING: appointment booking, rescheduling, cancelling, checking availability, providing personal details (name, email, preferences) as part of an ongoing booking flow, or any request that requires looking up or modifying appointments.
-
-IMPORTANT: If the recent conversation shows an active booking/rescheduling/cancelling flow (e.g. the assistant asked for the patient's name, email, or time preference), then the patient's reply is ALWAYS part of that booking flow — classify it as BOOKING.
-
-{context}Latest message: {message}
-
-Classification:"""
+ROUTER_PROMPT = (
+    "Classify this dental clinic conversation. "
+    "Reply with exactly one word — either FAQ or BOOKING.\n\n"
+    "- FAQ: greetings, questions about services, pricing, location, "
+    "hours, policies, insurance, general info, thank-you messages, "
+    "or anything that does NOT require looking up or modifying "
+    "appointments.\n"
+    "- BOOKING: appointment booking, rescheduling, cancelling, "
+    "checking availability, providing personal details (name, email, "
+    "preferences) as part of an ongoing booking flow, or any request "
+    "that requires looking up or modifying appointments.\n\n"
+    "IMPORTANT: If the recent conversation shows an active "
+    "booking/rescheduling/cancelling flow (e.g. the assistant asked "
+    "for the patient's name, email, or time preference), then the "
+    "patient's reply is ALWAYS part of that booking flow — classify "
+    "it as BOOKING.\n\n"
+    "{context}Latest message: {message}\n\n"
+    "Classification:"
+)
 
 
 # ── State schema ─────────────────────────────────────────────────────
