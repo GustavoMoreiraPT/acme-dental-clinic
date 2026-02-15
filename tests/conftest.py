@@ -15,6 +15,8 @@ def pytest_configure(config):
     """
     os.environ.setdefault("ANTHROPIC_API_KEY", "test-anthropic-key-123")
     os.environ.setdefault("CALENDLY_API_TOKEN", "test-calendly-token-456")
+    os.environ.setdefault("ROUTER_MODEL_NAME", "claude-haiku-4-5")
+    os.environ.setdefault("FAST_MODEL_NAME", "claude-haiku-4-5")
 
 
 @pytest.fixture

@@ -65,6 +65,10 @@ def _require_env(name: str) -> str:
 ANTHROPIC_API_KEY: str = _require_env("ANTHROPIC_API_KEY")
 MODEL_NAME: str = os.getenv("MODEL_NAME", "claude-opus-4-6")
 
+# Multi-model routing: cheap models for classification and simple tasks
+ROUTER_MODEL_NAME: str = os.getenv("ROUTER_MODEL_NAME", "claude-haiku-4-5")
+FAST_MODEL_NAME: str = os.getenv("FAST_MODEL_NAME", "claude-haiku-4-5")
+
 # ── Calendly ────────────────────────────────────────────────────────
 CALENDLY_API_TOKEN: str = _require_env("CALENDLY_API_TOKEN")
 CALENDLY_BASE_URL: str = "https://api.calendly.com"

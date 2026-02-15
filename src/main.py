@@ -31,12 +31,13 @@ def _configure_logging(debug: bool = False) -> None:
     )
 
     if not debug:
-        # Silence chatty HTTP loggers even if root is WARNING
+        # Silence chatty HTTP loggers in normal mode
         logging.getLogger("httpx").setLevel(logging.WARNING)
         logging.getLogger("httpcore").setLevel(logging.WARNING)
 
-    # Always keep our own logger at INFO minimum so session starts show
-    logging.getLogger("src").setLevel(logging.DEBUG if debug else logging.INFO)
+    # In normal mode: suppress all internal logs for a clean chat experience.
+    # In debug mode: show everything including model selection and latency.
+    logging.getLogger("src").setLevel(logging.DEBUG if debug else logging.WARNING)
 
 
 def main():
